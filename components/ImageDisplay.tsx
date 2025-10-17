@@ -18,12 +18,12 @@ const DownloadIcon: React.FC = () => (
 );
 
 const ImageCard: React.FC<{ title: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-  <div className="w-full bg-slate-800/50 p-4 rounded-lg border border-slate-700 flex flex-col gap-3">
-    <div className="flex justify-center items-center relative h-8">
-      <h3 className="text-lg font-semibold text-slate-400">{title}</h3>
-      {action && <div className="absolute right-0 top-1/2 -translate-y-1/2">{action}</div>}
+  <div className="w-full bg-slate-900/50 backdrop-blur-lg p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
+    <div className="flex justify-between items-center relative h-8">
+      <h3 className="text-xl font-bold text-slate-300 font-display tracking-wide">{title}</h3>
+      {action}
     </div>
-    <div className="aspect-square w-full bg-slate-900 rounded-md overflow-hidden flex items-center justify-center">
+    <div className="aspect-square w-full bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center">
       {children}
     </div>
   </div>
@@ -42,7 +42,7 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, edite
     return (
       <button
         onClick={() => setSaveModalState({ image: imageState, filename })}
-        className="p-2 bg-slate-700 text-slate-300 rounded-full hover:bg-slate-600 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="p-2 bg-slate-700/80 text-slate-300 rounded-full hover:bg-slate-700 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
         title="Save image as..."
         aria-label="Save image with options"
         disabled={disabled}
@@ -81,7 +81,7 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, edite
             />
           ) : (
             <div className="text-slate-500 text-center p-4">
-              <p>Your generated image will appear here.</p>
+              <p>Your AI-generated image will appear here.</p>
             </div>
           )}
         </ImageCard>

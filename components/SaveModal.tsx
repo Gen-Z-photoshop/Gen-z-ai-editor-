@@ -83,22 +83,22 @@ export const SaveModal: React.FC<SaveModalProps> = ({ imageState, defaultFilenam
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
-      <div className="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md border border-slate-700" onClick={(e) => e.stopPropagation()}>
-        <h2 id="save-modal-title" className="text-xl font-bold mb-4">Save Image</h2>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+      <div className="bg-slate-900 rounded-xl shadow-2xl p-6 w-full max-w-md border border-slate-700" onClick={(e) => e.stopPropagation()}>
+        <h2 id="save-modal-title" className="text-2xl font-bold mb-4 font-display">Save Image</h2>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-400 mb-2">File Format</label>
-            <div className="flex gap-2">
-              <button onClick={() => setFormat('png')} className={`px-4 py-2 rounded-md text-sm w-full transition-colors ${format === 'png' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600'}`}>PNG</button>
-              <button onClick={() => setFormat('jpeg')} className={`px-4 py-2 rounded-md text-sm w-full transition-colors ${format === 'jpeg' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600'}`}>JPEG</button>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setFormat('png')} className={`px-4 py-2 rounded-lg text-sm w-full transition-colors duration-200 border-2 ${format === 'png' ? 'bg-sky-500/20 border-sky-500 text-white' : 'bg-slate-800 border-slate-700 hover:border-slate-600'}`} title="Save as a lossless PNG file. Best for quality.">PNG</button>
+              <button onClick={() => setFormat('jpeg')} className={`px-4 py-2 rounded-lg text-sm w-full transition-colors duration-200 border-2 ${format === 'jpeg' ? 'bg-sky-500/20 border-sky-500 text-white' : 'bg-slate-800 border-slate-700 hover:border-slate-600'}`} title="Save as a compressed JPEG file. Smaller file size.">JPEG</button>
             </div>
           </div>
 
           {format === 'jpeg' && (
             <div>
-              <label htmlFor="quality" className="block text-sm font-medium text-slate-400 mb-2">Quality: {quality}</label>
+              <label htmlFor="quality" className="block text-sm font-medium text-slate-400 mb-2">Quality: <span className="font-semibold text-slate-200">{quality}</span></label>
               <input
                 type="range"
                 id="quality"
@@ -106,7 +106,8 @@ export const SaveModal: React.FC<SaveModalProps> = ({ imageState, defaultFilenam
                 max="100"
                 value={quality}
                 onChange={(e) => setQuality(parseInt(e.target.value, 10))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                title="Adjust compression quality. Lower values mean smaller file size."
               />
             </div>
           )}
@@ -114,12 +115,13 @@ export const SaveModal: React.FC<SaveModalProps> = ({ imageState, defaultFilenam
           {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-md bg-slate-600 hover:bg-slate-500 transition-colors">Cancel</button>
+        <div className="mt-8 flex justify-end gap-3">
+          <button onClick={onClose} className="px-5 py-2 rounded-lg bg-slate-700/80 hover:bg-slate-700 transition-colors" title="Close this dialog without saving">Cancel</button>
           <button 
             onClick={handleSave} 
             disabled={isSaving}
-            className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 disabled:bg-slate-500 disabled:cursor-wait transition-colors flex items-center"
+            className="px-5 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-semibold hover:from-sky-500 hover:to-cyan-400 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-wait transition-all flex items-center"
+            title="Save the image to your device"
           >
             {isSaving && (
                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
