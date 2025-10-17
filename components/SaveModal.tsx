@@ -1,0 +1,135 @@
+import React, { useState, useEffect } from 'react';
+import type { ImageState } from '../types';
+import { convertDataUrlToBlob } from '../utils/imageUtils';
+
+interface SaveModalProps {
+  imageState: ImageState | null;
+  defaultFilename: string;
+  onClose: () => void;
+  brightness: number;
+  contrast: number;
+}
+
+export const SaveModal: React.FC<SaveModalProps> = ({ imageState, defaultFilename, onClose, brightness, contrast }) => {
+  const [format, setFormat] = useState<'png' | 'jpeg'>('png');
+  const [quality, setQuality] = useState<number>(92);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (imageState?.mimeType === 'image/png') {
+        setFormat('png');
+    } else {
+        setFormat('jpeg');
+    }
+  }, [imageState]);
+
+  if (!imageState) return null;
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError(null);
+
+    const mimeType: 'image/png' | 'image/jpeg' = `image/${format}`;
+    const fileExtension = format;
+    const filenameWithExt = `${defaultFilename}.${fileExtension}`;
+    const dataUrl = `data:${imageState.mimeType};base64,${imageState.src}`;
+    
+    try {
+        const blob = await convertDataUrlToBlob(dataUrl, mimeType, {
+          quality: quality / 100,
+          brightness: brightness / 100,
+          contrast: contrast / 100,
+        });
+
+        if (!blob) {
+            throw new Error("Failed to convert image.");
+        }
+
+        if ('showSaveFilePicker' in window) {
+            const handle = await (window as any).showSaveFilePicker({
+                suggestedName: filenameWithExt,
+                types: [{
+                    description: `${format.toUpperCase()} Image`,
+                    accept: { [mimeType]: [`.${fileExtension}`] },
+                }],
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+        } else {
+            // Fallback for older browsers
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = filenameWithExt;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        onClose();
+    } catch (err: any) {
+        if (err.name === 'AbortError') {
+             console.log("Save operation cancelled by user.");
+        } else {
+            console.error("Save failed:", err);
+            setError("Could not save the image. Please try again.");
+        }
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+      <div className="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md border border-slate-700" onClick={(e) => e.stopPropagation()}>
+        <h2 id="save-modal-title" className="text-xl font-bold mb-4">Save Image</h2>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">File Format</label>
+            <div className="flex gap-2">
+              <button onClick={() => setFormat('png')} className={`px-4 py-2 rounded-md text-sm w-full transition-colors ${format === 'png' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600'}`}>PNG</button>
+              <button onClick={() => setFormat('jpeg')} className={`px-4 py-2 rounded-md text-sm w-full transition-colors ${format === 'jpeg' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600'}`}>JPEG</button>
+            </div>
+          </div>
+
+          {format === 'jpeg' && (
+            <div>
+              <label htmlFor="quality" className="block text-sm font-medium text-slate-400 mb-2">Quality: {quality}</label>
+              <input
+                type="range"
+                id="quality"
+                min="1"
+                max="100"
+                value={quality}
+                onChange={(e) => setQuality(parseInt(e.target.value, 10))}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+            </div>
+          )}
+
+          {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 rounded-md bg-slate-600 hover:bg-slate-500 transition-colors">Cancel</button>
+          <button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 disabled:bg-slate-500 disabled:cursor-wait transition-colors flex items-center"
+          >
+            {isSaving && (
+                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            )}
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
