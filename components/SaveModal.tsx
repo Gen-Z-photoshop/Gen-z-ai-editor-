@@ -30,7 +30,8 @@ export const SaveModal: React.FC<SaveModalProps> = ({ imageState, defaultFilenam
     setIsSaving(true);
     setError(null);
 
-    const mimeType: 'image/png' | 'image/jpeg' = `image/${format}`;
+    // Fix: Use a conditional to ensure correct type inference for mimeType.
+    const mimeType: 'image/png' | 'image/jpeg' = `image/${format}` as 'image/png' | 'image/jpeg';
     const fileExtension = format;
     const filenameWithExt = `${defaultFilename}.${fileExtension}`;
     const dataUrl = `data:${imageState.mimeType};base64,${imageState.src}`;

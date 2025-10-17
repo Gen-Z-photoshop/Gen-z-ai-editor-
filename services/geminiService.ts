@@ -34,7 +34,7 @@ export const editImageWithPrompt = async (base64ImageData: string, mimeType: str
     throw new Error('No image data found in the API response.');
   } catch (error) {
     console.error("Error calling Gemini API for image editing:", error);
-    throw new Error("The AI model failed to process the image editing request.");
+    throw error;
   }
 };
 
@@ -58,6 +58,6 @@ export const generateMagicPrompt = async (currentPrompt: string): Promise<string
         return text.replace(/^"|"$/g, '');
     } catch (error) {
         console.error("Error calling Gemini API for magic prompt:", error);
-        throw new Error("The AI model failed to generate a prompt.");
+        throw error;
     }
 };

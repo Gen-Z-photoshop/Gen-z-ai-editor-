@@ -5,59 +5,91 @@ import { EditControls } from './components/EditControls';
 import { ImageDisplay } from './components/ImageDisplay';
 import { Footer } from './components/Footer';
 import { ImageHistory } from './components/ImageHistory';
+import { OriginalImageGallery } from './components/OriginalImageGallery';
 import { editImageWithPrompt, generateMagicPrompt } from './services/geminiService';
 import { fileToBase64 } from './utils/fileUtils';
 import type { ImageState } from './types';
 
 const App: React.FC = () => {
-  const [originalImage, setOriginalImage] = useState<ImageState | null>(null);
-  const [editedImages, setEditedImages] = useState<ImageState[]>([]);
-  const [selectedEditedImageIndex, setSelectedEditedImageIndex] = useState<number | null>(null);
+  const [originalImages, setOriginalImages] = useState<ImageState[]>([]);
+  const [activeOriginalImageIndex, setActiveOriginalImageIndex] = useState<number>(0);
+  const [editedImageHistories, setEditedImageHistories] = useState<Record<number, ImageState[]>>({});
+  const [selectedEditedImageIndices, setSelectedEditedImageIndices] = useState<Record<number, number | null>>({});
+
   const [prompt, setPrompt] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isBatchProcessing, setIsBatchProcessing] = useState<boolean>(false);
+  const [processingImageIndex, setProcessingImageIndex] = useState<number | null>(null);
   const [isMagicPromptLoading, setIsMagicPromptLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [brightness, setBrightness] = useState<number>(100);
   const [contrast, setContrast] = useState<number>(100);
 
-  const handleImageUpload = useCallback(async (file: File) => {
+  const resetState = useCallback(() => {
+    setOriginalImages([]);
+    setActiveOriginalImageIndex(0);
+    setEditedImageHistories({});
+    setSelectedEditedImageIndices({});
+    setPrompt('');
     setError(null);
-    setEditedImages([]);
-    setSelectedEditedImageIndex(null);
+    setIsBatchProcessing(false);
+    setProcessingImageIndex(null);
     setBrightness(100);
     setContrast(100);
+  }, []);
+
+  const handleImageUpload = useCallback(async (files: FileList) => {
+    if (!files || files.length === 0) return;
+    resetState();
     try {
-      const { base64, mimeType } = await fileToBase64(file);
-      setOriginalImage({ src: base64, mimeType });
+      const imagePromises = Array.from(files).map(file => fileToBase64(file));
+      const imagesData = await Promise.all(imagePromises);
+      setOriginalImages(imagesData.map(data => ({ src: data.base64, mimeType: data.mimeType })));
+      setActiveOriginalImageIndex(0);
     } catch (err) {
-      setError('Failed to load image. Please try another file.');
+      setError('Failed to load images. Please try again.');
       console.error(err);
     }
-  }, []);
+  }, [resetState]);
   
   const handleGenerate = useCallback(async () => {
-    if (!originalImage || !prompt.trim()) {
-      setError('Please upload an image and enter a prompt.');
+    if (originalImages.length === 0 || !prompt.trim()) {
+      setError('Please upload at least one image and enter a prompt.');
       return;
     }
 
-    setIsLoading(true);
+    setIsBatchProcessing(true);
     setError(null);
 
-    try {
-      const newImage = await editImageWithPrompt(originalImage.src, originalImage.mimeType, prompt);
-      setEditedImages(prevImages => {
-        const updatedImages = [...prevImages, newImage];
-        setSelectedEditedImageIndex(updatedImages.length - 1);
-        return updatedImages;
-      });
-    } catch (err) {
-      console.error(err);
-      setError('Failed to generate image. The model may not have been able to fulfill the request. Please try a different prompt.');
-    } finally {
-      setIsLoading(false);
+    for (let i = 0; i < originalImages.length; i++) {
+        setProcessingImageIndex(i);
+        setActiveOriginalImageIndex(i); // Follow the processing live
+        const currentImage = originalImages[i];
+        
+        try {
+            const newImage = await editImageWithPrompt(currentImage.src, currentImage.mimeType, prompt);
+            
+            setEditedImageHistories(prevHistories => {
+                const newHistory = [...(prevHistories[i] || []), newImage];
+                setSelectedEditedImageIndices(prevIndices => ({
+                    ...prevIndices,
+                    [i]: newHistory.length - 1,
+                }));
+                return {
+                    ...prevHistories,
+                    [i]: newHistory,
+                };
+            });
+        } catch (err) {
+            console.error(`Error processing image ${i + 1}:`, err);
+            const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+            setError(`Failed to generate image ${i + 1}: ${errorMessage}. Batch processing stopped.`);
+            break; // Stop processing on error
+        }
     }
-  }, [originalImage, prompt]);
+
+    setProcessingImageIndex(null);
+    setIsBatchProcessing(false);
+  }, [originalImages, prompt]);
 
   const handleMagicPrompt = useCallback(async () => {
     setIsMagicPromptLoading(true);
@@ -67,30 +99,31 @@ const App: React.FC = () => {
         setPrompt(enhancedPrompt);
     } catch (err) {
         console.error(err);
-        setError("Failed to generate a magic prompt. Please try again.");
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+        setError(`Magic prompt failed: ${errorMessage}`);
     } finally {
         setIsMagicPromptLoading(false);
     }
   }, [prompt]);
 
-  const resetState = useCallback(() => {
-    setOriginalImage(null);
-    setEditedImages([]);
-    setSelectedEditedImageIndex(null);
-    setPrompt('');
-    setError(null);
-    setIsLoading(false);
-    setBrightness(100);
-    setContrast(100);
-  }, []);
+  const handleSelectEditedImage = (imageIndex: number) => {
+    setSelectedEditedImageIndices(prev => ({
+        ...prev,
+        [activeOriginalImageIndex]: imageIndex
+    }));
+  };
 
-  const selectedEditedImage = selectedEditedImageIndex !== null ? editedImages[selectedEditedImageIndex] : null;
-
+  const activeOriginalImage = originalImages.length > 0 ? originalImages[activeOriginalImageIndex] : null;
+  const activeEditedHistory = editedImageHistories[activeOriginalImageIndex] || [];
+  const activeSelectedEditedImageIndex = selectedEditedImageIndices[activeOriginalImageIndex] ?? null;
+  const selectedEditedImage = activeSelectedEditedImageIndex !== null ? activeEditedHistory[activeSelectedEditedImageIndex] : null;
+  const isCurrentlyProcessingActive = processingImageIndex === activeOriginalImageIndex;
+  
   return (
     <div className="min-h-screen text-slate-200 flex flex-col">
       <Header />
       <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center">
-        {!originalImage ? (
+        {!activeOriginalImage ? (
           <ImageUploader onImageUpload={handleImageUpload} />
         ) : (
           <div className="w-full max-w-6xl flex flex-col gap-8">
@@ -98,7 +131,7 @@ const App: React.FC = () => {
               prompt={prompt}
               setPrompt={setPrompt}
               onGenerate={handleGenerate}
-              isLoading={isLoading}
+              isLoading={isBatchProcessing}
               onReset={resetState}
               isMagicPromptLoading={isMagicPromptLoading}
               onMagicPrompt={handleMagicPrompt}
@@ -106,24 +139,32 @@ const App: React.FC = () => {
               setBrightness={setBrightness}
               contrast={contrast}
               setContrast={setContrast}
+              imageCount={originalImages.length}
             />
              {error && (
               <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-md w-full text-center -mt-4">
                 <p>{error}</p>
               </div>
             )}
+            <OriginalImageGallery
+              images={originalImages}
+              activeIndex={activeOriginalImageIndex}
+              onSelect={setActiveOriginalImageIndex}
+              processingIndex={processingImageIndex}
+              isBatchProcessing={isBatchProcessing}
+            />
             <ImageDisplay 
-              originalImage={originalImage} 
+              originalImage={activeOriginalImage} 
               editedImage={selectedEditedImage} 
-              isLoading={isLoading && editedImages.length === 0}
+              isLoading={isCurrentlyProcessingActive}
               brightness={brightness}
               contrast={contrast}
             />
             <ImageHistory 
-              images={editedImages}
-              selectedIndex={selectedEditedImageIndex}
-              onSelect={setSelectedEditedImageIndex}
-              isLoading={isLoading}
+              images={activeEditedHistory}
+              selectedIndex={activeSelectedEditedImageIndex}
+              onSelect={handleSelectEditedImage}
+              isLoading={isCurrentlyProcessingActive}
             />
           </div>
         )}

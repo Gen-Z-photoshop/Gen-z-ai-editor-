@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 
 interface ImageUploaderProps {
-  onImageUpload: (file: File) => void;
+  onImageUpload: (files: FileList) => void;
 }
 
 const UploadIcon: React.FC = () => (
@@ -14,8 +14,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload }) =
   const [isDragging, setIsDragging] = useState(false);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      onImageUpload(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      onImageUpload(e.target.files);
     }
   };
 
@@ -27,8 +27,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload }) =
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLLabelElement>) => {
     handleDragEvents(e, false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onImageUpload(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      onImageUpload(e.dataTransfer.files);
     }
   }, [onImageUpload, handleDragEvents]);
 
@@ -36,7 +36,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload }) =
   
   return (
     <div className="w-full max-w-2xl text-center flex flex-col items-center justify-center p-8">
-        <h2 className="text-3xl font-semibold mb-2">Start by uploading a photo</h2>
+        <h2 className="text-3xl font-semibold mb-2">Start by uploading photos</h2>
         <p className="text-slate-400 mb-8">Let your creativity run wild. Edit your photos with a simple text prompt.</p>
         <label
             htmlFor="file-upload"
@@ -51,9 +51,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload }) =
                 <p className="mb-2 text-sm text-slate-400">
                     <span className="font-semibold text-blue-500">Click to upload</span> or drag and drop
                 </p>
-                <p className="text-xs text-slate-500">PNG, JPG, GIF or WEBP</p>
+                <p className="text-xs text-slate-500">Upload one or more images (PNG, JPG, etc.)</p>
             </div>
-            <input id="file-upload" type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+            <input id="file-upload" type="file" className="hidden" onChange={handleFileChange} accept="image/*" multiple />
         </label>
     </div>
   );

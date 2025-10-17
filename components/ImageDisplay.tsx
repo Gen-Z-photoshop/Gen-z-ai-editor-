@@ -70,7 +70,7 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, edite
           title="Edited"
           action={createDownloadButton(editedImage, 'edited-image', isLoading || !editedImage)}
         >
-          {isLoading ? (
+          {isLoading && !editedImage ? (
             <Spinner />
           ) : editedImage ? (
             <img 
