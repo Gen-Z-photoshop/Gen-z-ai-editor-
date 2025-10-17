@@ -8,10 +8,6 @@ interface EditControlsProps {
   onReset: () => void;
   isMagicPromptLoading: boolean;
   onMagicPrompt: () => void;
-  brightness: number;
-  setBrightness: (value: number) => void;
-  contrast: number;
-  setContrast: (value: number) => void;
   imageCount: number;
 }
 
@@ -35,7 +31,6 @@ const MagicWandIcon: React.FC<{isLoading: boolean}> = ({ isLoading }) => {
 export const EditControls: React.FC<EditControlsProps> = ({ 
   prompt, setPrompt, onGenerate, isLoading, onReset, 
   isMagicPromptLoading, onMagicPrompt,
-  brightness, setBrightness, contrast, setContrast,
   imageCount
 }) => {
   const isAnyLoading = isLoading || isMagicPromptLoading;
@@ -91,36 +86,6 @@ export const EditControls: React.FC<EditControlsProps> = ({
             </svg>
           </button>
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-2">
-          <div>
-              <label htmlFor="brightness" className="block text-sm font-medium text-slate-400 mb-2">Brightness: <span className="font-semibold text-slate-200">{brightness - 100}</span></label>
-              <input
-                  type="range"
-                  id="brightness"
-                  min="0"
-                  max="200"
-                  value={brightness}
-                  onChange={(e) => setBrightness(parseInt(e.target.value, 10))}
-                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                  disabled={isAnyLoading}
-                  title="Adjust the brightness of the final edited image"
-              />
-          </div>
-          <div>
-              <label htmlFor="contrast" className="block text-sm font-medium text-slate-400 mb-2">Contrast: <span className="font-semibold text-slate-200">{contrast - 100}</span></label>
-              <input
-                  type="range"
-                  id="contrast"
-                  min="0"
-                  max="200"
-                  value={contrast}
-                  onChange={(e) => setContrast(parseInt(e.target.value, 10))}
-                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                  disabled={isAnyLoading}
-                  title="Adjust the contrast of the final edited image"
-              />
-          </div>
       </div>
     </div>
   );

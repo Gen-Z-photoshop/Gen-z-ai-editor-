@@ -6,11 +6,9 @@ interface SaveModalProps {
   imageState: ImageState | null;
   defaultFilename: string;
   onClose: () => void;
-  brightness: number;
-  contrast: number;
 }
 
-export const SaveModal: React.FC<SaveModalProps> = ({ imageState, defaultFilename, onClose, brightness, contrast }) => {
+export const SaveModal: React.FC<SaveModalProps> = ({ imageState, defaultFilename, onClose }) => {
   const [format, setFormat] = useState<'png' | 'jpeg'>('png');
   const [quality, setQuality] = useState<number>(92);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -35,8 +33,6 @@ export const SaveModal: React.FC<SaveModalProps> = ({ imageState, defaultFilenam
             filename: defaultFilename,
             format,
             quality,
-            brightness,
-            contrast,
         });
         // If saveImageFile doesn't throw, it means success or user cancellation.
         // In either case, we should close the modal.

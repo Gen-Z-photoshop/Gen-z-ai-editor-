@@ -21,8 +21,6 @@ const App: React.FC = () => {
   const [processingImageIndex, setProcessingImageIndex] = useState<number | null>(null);
   const [isMagicPromptLoading, setIsMagicPromptLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [brightness, setBrightness] = useState<number>(100);
-  const [contrast, setContrast] = useState<number>(100);
 
   const resetState = useCallback(() => {
     setOriginalImages([]);
@@ -33,8 +31,6 @@ const App: React.FC = () => {
     setError(null);
     setIsBatchProcessing(false);
     setProcessingImageIndex(null);
-    setBrightness(100);
-    setContrast(100);
   }, []);
 
   const handleImageUpload = useCallback(async (files: FileList) => {
@@ -135,10 +131,6 @@ const App: React.FC = () => {
               onReset={resetState}
               isMagicPromptLoading={isMagicPromptLoading}
               onMagicPrompt={handleMagicPrompt}
-              brightness={brightness}
-              setBrightness={setBrightness}
-              contrast={contrast}
-              setContrast={setContrast}
               imageCount={originalImages.length}
             />
              {error && (
@@ -157,8 +149,6 @@ const App: React.FC = () => {
               originalImage={activeOriginalImage} 
               editedImage={selectedEditedImage} 
               isLoading={isCurrentlyProcessingActive}
-              brightness={brightness}
-              contrast={contrast}
             />
             <ImageHistory 
               images={activeEditedHistory}

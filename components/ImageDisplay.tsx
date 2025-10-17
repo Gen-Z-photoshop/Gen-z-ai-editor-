@@ -8,8 +8,6 @@ interface ImageDisplayProps {
   originalImage: ImageState;
   editedImage: ImageState | null;
   isLoading: boolean;
-  brightness: number;
-  contrast: number;
 }
 
 const QuickDownloadIcon: React.FC = () => (
@@ -42,7 +40,7 @@ type SaveModalState = {
   filename: string;
 } | null;
 
-export const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, editedImage, isLoading, brightness, contrast }) => {
+export const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, editedImage, isLoading }) => {
   const [saveModalState, setSaveModalState] = useState<SaveModalState>(null);
   const [isQuickSaving, setIsQuickSaving] = useState<boolean>(false);
 
@@ -53,8 +51,6 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, edite
         filename,
         format: 'jpeg',
         quality: 95, // High quality preset
-        brightness,
-        contrast,
       });
     } catch (error) {
       console.error("Quick save failed:", error);
@@ -93,11 +89,6 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, edite
     );
   };
   
-
-  const editedImageStyle = {
-    filter: `brightness(${brightness / 100}) contrast(${contrast / 100})`,
-  };
-  
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
@@ -119,7 +110,6 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, edite
               src={`data:${editedImage.mimeType};base64,${editedImage.src}`} 
               alt="AI edited result" 
               className="object-contain w-full h-full"
-              style={editedImageStyle}
             />
           ) : (
             <div className="text-slate-500 text-center p-4">
@@ -134,8 +124,6 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, edite
             imageState={saveModalState.image}
             defaultFilename={saveModalState.filename}
             onClose={() => setSaveModalState(null)}
-            brightness={brightness}
-            contrast={contrast}
         />
       )}
     </>

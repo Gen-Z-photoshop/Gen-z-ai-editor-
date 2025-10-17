@@ -4,13 +4,11 @@ import type { ImageState } from '../types';
 interface SaveOptions {
   format: 'png' | 'jpeg';
   quality: number; // 1-100
-  brightness: number; // 0-200
-  contrast: number; // 0-200
   filename: string;
 }
 
 export const saveImageFile = async (imageState: ImageState, options: SaveOptions): Promise<void> => {
-    const { format, quality, brightness, contrast, filename } = options;
+    const { format, quality, filename } = options;
 
     const mimeType = `image/${format}` as 'image/png' | 'image/jpeg';
     const fileExtension = format;
@@ -19,8 +17,6 @@ export const saveImageFile = async (imageState: ImageState, options: SaveOptions
     
     const blob = await convertDataUrlToBlob(dataUrl, mimeType, {
       quality: quality / 100,
-      brightness: brightness / 100,
-      contrast: contrast / 100,
     });
 
     if (!blob) {
