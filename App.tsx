@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+
+import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
 import { EditControls } from './components/EditControls';
@@ -9,8 +10,25 @@ import { OriginalImageGallery } from './components/OriginalImageGallery';
 import { editImageWithPrompt, generateMagicPrompt } from './services/geminiService';
 import { fileToBase64 } from './utils/fileUtils';
 import type { ImageState } from './types';
+import { ApiKeySelector } from './components/ApiKeySelector';
+import { Spinner } from './components/Spinner';
+
+// FIX: Define AIStudio interface to match existing global declarations and resolve TypeScript errors.
+interface AIStudio {
+  hasSelectedApiKey: () => Promise<boolean>;
+  openSelectKey: () => Promise<void>;
+}
+
+declare global {
+  interface Window {
+    aistudio: AIStudio;
+  }
+}
 
 const App: React.FC = () => {
+  const [hasApiKey, setHasApiKey] = useState<boolean>(false);
+  const [isCheckingApiKey, setIsCheckingApiKey] = useState<boolean>(true);
+
   const [originalImages, setOriginalImages] = useState<ImageState[]>([]);
   const [activeOriginalImageIndex, setActiveOriginalImageIndex] = useState<number>(0);
   const [editedImageHistories, setEditedImageHistories] = useState<Record<number, ImageState[]>>({});
@@ -21,6 +39,47 @@ const App: React.FC = () => {
   const [processingImageIndex, setProcessingImageIndex] = useState<number | null>(null);
   const [isMagicPromptLoading, setIsMagicPromptLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkApiKey = async () => {
+        try {
+            if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
+                const hasKey = await window.aistudio.hasSelectedApiKey();
+                setHasApiKey(hasKey);
+            } else {
+                console.warn('aistudio API not found, proceeding without key check.');
+                setHasApiKey(true);
+            }
+        } catch (e) {
+            console.error("Error checking for API key:", e);
+            setHasApiKey(false);
+        } finally {
+            setIsCheckingApiKey(false);
+        }
+    };
+    checkApiKey();
+  }, []);
+
+  const handleKeySelected = () => {
+    setHasApiKey(true);
+  };
+  
+  const handleApiError = (err: unknown) => {
+    console.error(`API Error:`, err);
+    const genericMessage = 'An unknown error occurred.';
+    let errorMessage = err instanceof Error ? err.message : genericMessage;
+
+    if (typeof errorMessage === 'string') {
+        if (errorMessage.includes("RESOURCE_EXHAUSTED") || errorMessage.includes("429")) {
+            return "You have exceeded the quota for your selected API key. Please check your plan and billing details with Google AI Studio.";
+        } else if (errorMessage.includes("Requested entity was not found")) {
+            setHasApiKey(false); // Reset to show the key selector again
+            return "The selected API key is invalid. Please select a valid key to continue.";
+        }
+    }
+    
+    return `An API error occurred. Details: ${errorMessage}`;
+  };
 
   const resetState = useCallback(() => {
     setOriginalImages([]);
@@ -76,9 +135,8 @@ const App: React.FC = () => {
                 };
             });
         } catch (err) {
-            console.error(`Error processing image ${i + 1}:`, err);
-            const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-            setError(`Failed to generate image ${i + 1}: ${errorMessage}. Batch processing stopped.`);
+            const friendlyError = handleApiError(err);
+            setError(`Failed to generate image ${i + 1}: ${friendlyError} Batch processing stopped.`);
             break; // Stop processing on error
         }
     }
@@ -94,9 +152,8 @@ const App: React.FC = () => {
         const enhancedPrompt = await generateMagicPrompt(prompt);
         setPrompt(enhancedPrompt);
     } catch (err) {
-        console.error(err);
-        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-        setError(`Magic prompt failed: ${errorMessage}`);
+        const friendlyError = handleApiError(err);
+        setError(`Magic prompt failed: ${friendlyError}`);
     } finally {
         setIsMagicPromptLoading(false);
     }
@@ -118,47 +175,55 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen text-slate-200 flex flex-col">
       <Header />
-      <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center">
-        {!activeOriginalImage ? (
-          <ImageUploader onImageUpload={handleImageUpload} />
-        ) : (
-          <div className="w-full max-w-6xl flex flex-col gap-8">
-            <EditControls 
-              prompt={prompt}
-              setPrompt={setPrompt}
-              onGenerate={handleGenerate}
-              isLoading={isBatchProcessing}
-              onReset={resetState}
-              isMagicPromptLoading={isMagicPromptLoading}
-              onMagicPrompt={handleMagicPrompt}
-              imageCount={originalImages.length}
-            />
-             {error && (
-              <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-md w-full text-center -mt-4">
-                <p>{error}</p>
-              </div>
-            )}
-            <OriginalImageGallery
-              images={originalImages}
-              activeIndex={activeOriginalImageIndex}
-              onSelect={setActiveOriginalImageIndex}
-              processingIndex={processingImageIndex}
-              isBatchProcessing={isBatchProcessing}
-            />
-            <ImageDisplay 
-              originalImage={activeOriginalImage} 
-              editedImage={selectedEditedImage} 
-              isLoading={isCurrentlyProcessingActive}
-            />
-            <ImageHistory 
-              images={activeEditedHistory}
-              selectedIndex={activeSelectedEditedImageIndex}
-              onSelect={handleSelectEditedImage}
-              isLoading={isCurrentlyProcessingActive}
-            />
-          </div>
-        )}
-      </main>
+      {isCheckingApiKey ? (
+        <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center justify-center">
+          <Spinner />
+        </main>
+      ) : !hasApiKey ? (
+        <ApiKeySelector onKeySelect={handleKeySelected} />
+      ) : (
+        <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center">
+          {!activeOriginalImage ? (
+            <ImageUploader onImageUpload={handleImageUpload} />
+          ) : (
+            <div className="w-full max-w-6xl flex flex-col gap-8">
+              <EditControls 
+                prompt={prompt}
+                setPrompt={setPrompt}
+                onGenerate={handleGenerate}
+                isLoading={isBatchProcessing}
+                onReset={resetState}
+                isMagicPromptLoading={isMagicPromptLoading}
+                onMagicPrompt={handleMagicPrompt}
+                imageCount={originalImages.length}
+              />
+               {error && (
+                <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-md w-full text-center -mt-4">
+                  <p>{error}</p>
+                </div>
+              )}
+              <OriginalImageGallery
+                images={originalImages}
+                activeIndex={activeOriginalImageIndex}
+                onSelect={setActiveOriginalImageIndex}
+                processingIndex={processingImageIndex}
+                isBatchProcessing={isBatchProcessing}
+              />
+              <ImageDisplay 
+                originalImage={activeOriginalImage} 
+                editedImage={selectedEditedImage} 
+                isLoading={isCurrentlyProcessingActive}
+              />
+              <ImageHistory 
+                images={activeEditedHistory}
+                selectedIndex={activeSelectedEditedImageIndex}
+                onSelect={handleSelectEditedImage}
+                isLoading={isCurrentlyProcessingActive}
+              />
+            </div>
+          )}
+        </main>
+      )}
       <Footer />
     </div>
   );

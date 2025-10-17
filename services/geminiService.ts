@@ -1,9 +1,7 @@
-
 import { GoogleGenAI, Modality } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const editImageWithPrompt = async (base64ImageData: string, mimeType: string, prompt: string): Promise<{ src: string, mimeType: string }> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
@@ -39,6 +37,7 @@ export const editImageWithPrompt = async (base64ImageData: string, mimeType: str
 };
 
 export const generateMagicPrompt = async (currentPrompt: string): Promise<string> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
         const systemInstruction = "You are a creative assistant for an AI photo editor. Your task is to enhance a user's simple idea into a rich, descriptive prompt suitable for an image generation model. Make it artistic and detailed. The prompt should be a concise instruction, not a conversation. If the user's idea is blank, generate a completely random, creative, and inspiring photo editing prompt.";
         
