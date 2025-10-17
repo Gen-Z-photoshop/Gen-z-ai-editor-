@@ -18,19 +18,24 @@
 
       body {
         font-family: var(--font-sans);
-        background-color: #020617; /* slate-950 */
+        background-image: url('https://i.ibb.co/qMw1Z8NQ/10c22705-ea04-4c0f-8fa5-56240110d736.jpg');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
         color: #e2e8f0; /* slate-200 */
         overflow-x: hidden;
+        position: relative;
+        z-index: 1;
       }
 
       body::before {
         content: '';
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         right: 0;
-        height: 50vh;
-        background: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(56, 189, 248, 0.15), rgba(255, 255, 255, 0));
+        bottom: 0;
+        background-color: rgba(2, 6, 23, 0.8); /* slate-950 with 80% opacity */
         z-index: -1;
       }
 

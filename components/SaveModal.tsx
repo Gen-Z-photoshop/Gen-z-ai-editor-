@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ImageState } from '../types';
-import { convertDataUrlToBlob } from '../utils/imageUtils';
+import { saveImageFile } from '../utils/saveUtils';
 
 interface SaveModalProps {
   imageState: ImageState | null;
@@ -29,54 +29,21 @@ export const SaveModal: React.FC<SaveModalProps> = ({ imageState, defaultFilenam
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
-
-    // Fix: Use a conditional to ensure correct type inference for mimeType.
-    const mimeType: 'image/png' | 'image/jpeg' = `image/${format}` as 'image/png' | 'image/jpeg';
-    const fileExtension = format;
-    const filenameWithExt = `${defaultFilename}.${fileExtension}`;
-    const dataUrl = `data:${imageState.mimeType};base64,${imageState.src}`;
     
     try {
-        const blob = await convertDataUrlToBlob(dataUrl, mimeType, {
-          quality: quality / 100,
-          brightness: brightness / 100,
-          contrast: contrast / 100,
+        await saveImageFile(imageState, {
+            filename: defaultFilename,
+            format,
+            quality,
+            brightness,
+            contrast,
         });
-
-        if (!blob) {
-            throw new Error("Failed to convert image.");
-        }
-
-        if ('showSaveFilePicker' in window) {
-            const handle = await (window as any).showSaveFilePicker({
-                suggestedName: filenameWithExt,
-                types: [{
-                    description: `${format.toUpperCase()} Image`,
-                    accept: { [mimeType]: [`.${fileExtension}`] },
-                }],
-            });
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-        } else {
-            // Fallback for older browsers
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.href = url;
-            link.download = filenameWithExt;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
+        // If saveImageFile doesn't throw, it means success or user cancellation.
+        // In either case, we should close the modal.
         onClose();
     } catch (err: any) {
-        if (err.name === 'AbortError') {
-             console.log("Save operation cancelled by user.");
-        } else {
-            console.error("Save failed:", err);
-            setError("Could not save the image. Please try again.");
-        }
+        console.error("Save failed:", err);
+        setError("Could not save the image. Please try again.");
     } finally {
         setIsSaving(false);
     }
